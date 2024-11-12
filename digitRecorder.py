@@ -85,16 +85,15 @@ while True:
         V,A = segments_digits[:len(segments_digits)//2], segments_digits[len(segments_digits)//2:]
         data.append(f"{datetime.now().strftime('%H:%M:%S')} : V = {''.join(V)}, A = {''.join(A)}")
     
+        cv2.imshow("", frame)
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
     if len(data) == batch_size:
         print("flush")
         with open(txt_path, "a") as f:
             f.write("\n".join(data) + "\n")
         data.clear()
-
-    cv2.imshow("", frame)
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
-
 
 cap.release()
 cv2.destroyAllWindows()
