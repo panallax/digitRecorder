@@ -42,47 +42,48 @@ def _2_3_5(crop):
 
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-batch_size = 5088888888
+batch_size = 50
 data = []
 txt_path = f"./{datetime.now().strftime('%H_%M')}.txt"
 
 while True:
     time.sleep(5)
-    _,frame = cap.read()
-    im_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    im_gray = cv2.GaussianBlur(im_gray, (9,9), 0)
-    dst = cv2.threshold(im_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+    ret,frame = cap.read()
+    if ret:
+        im_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        im_gray = cv2.GaussianBlur(im_gray, (9,9), 0)
+        dst = cv2.threshold(im_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
 
-    thr = dst.copy()
-    kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (5,5))
-    dst = cv2.morphologyEx(dst, cv2.MORPH_CLOSE, kernel)
-    dst = cv2.dilate(dst, np.ones((15,15)), iterations= 1)
+        thr = dst.copy()
+        kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (5,5))
+        dst = cv2.morphologyEx(dst, cv2.MORPH_CLOSE, kernel)
+        dst = cv2.dilate(dst, np.ones((15,15)), iterations= 1)
 
-    contours,_ = cv2.findContours(dst, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    sorted_cont = sorted(contours, key=lambda ctr: cv2.boundingRect(ctr)[0] + cv2.boundingRect(ctr)[1] * im_gray.shape[0])
-  
-    segments_digits = []
-    for cnt in sorted_cont:
-      x, y, w, h = cv2.boundingRect(cnt)
-      area = h*w
-      if area > 1000 and h > 120:
-        
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 255), 1)
-        crop = thr[y:y+h, x:x+w]
-        segments = get_segments(crop)
+        contours,_ = cv2.findContours(dst, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        sorted_cont = sorted(contours, key=lambda ctr: cv2.boundingRect(ctr)[0] + cv2.boundingRect(ctr)[1] * im_gray.shape[0])
+    
+        segments_digits = []
+        for cnt in sorted_cont:
+            x, y, w, h = cv2.boundingRect(cnt)
+            area = h*w
+            if area > 1000 and h > 120:
+                
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 255), 1)
+                crop = thr[y:y+h, x:x+w]
+                segments = get_segments(crop)
 
-        try:
-            if segments == (0, 255, 0, 255, 0, 255, 0, 0, 255, 0, 0, 255, 0):
-                other_segments = _2_3_5(crop)
-                segments_digits.append(DICT_2_3_5[other_segments])
-            else:
-              segments_digits.append(SEGMENTS_DICT[segments])
-        except:
-            continue
+                try:
+                    if segments == (0, 255, 0, 255, 0, 255, 0, 0, 255, 0, 0, 255, 0):
+                        other_segments = _2_3_5(crop)
+                        segments_digits.append(DICT_2_3_5[other_segments])
+                    else:
+                        segments_digits.append(SEGMENTS_DICT[segments])
+                except:
+                    continue
 
 
-    V,A = segments_digits[:len(segments_digits)//2], segments_digits[len(segments_digits)//2:]
-    data.append(f"{datetime.now().strftime('%H:%M:%S')} : V = {''.join(V)}, A = {''.join(A)}")
+        V,A = segments_digits[:len(segments_digits)//2], segments_digits[len(segments_digits)//2:]
+        data.append(f"{datetime.now().strftime('%H:%M:%S')} : V = {''.join(V)}, A = {''.join(A)}")
     
     if len(data) == batch_size:
         print("flush")
